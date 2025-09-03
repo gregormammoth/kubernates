@@ -12,3 +12,9 @@ kubectl apply -f deployment.yaml
 
 # Expose and access the service via Minikube
 minikube service hello-k8s-service --url
+
+# Deploy RabbitMQ using the StatefulSet configuration
+kubectl apply -f rabbitmq-statefulset.yaml
+
+# Forward the RabbitMQ management UI port to localhost
+kubectl port-forward svc/rabbitmq-ui 15672:15672

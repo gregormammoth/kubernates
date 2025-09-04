@@ -13,11 +13,25 @@ spec:
         app: producer
     spec:
       containers:
-      - name: producer
-        image: producer-app
-        imagePullPolicy: Never
-        env:
-          - name: RABBITMQ_HOST
-            value: "rabbitmq"
-          - name: RABBITMQ_PORT
-            value: "5672"
+        - name: producer
+          image: producer-app:latest
+          imagePullPolicy: Never
+          env:
+            - name: REDIS_HOST
+              value: redis
+            - name: MYSQL_HOST
+              value: mariadb
+            - name: MYSQL_USER
+              value: appuser
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: hello-k8s-secret
+                  key: MARIADB_USER_PASSWORD
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: hello-k8s-secret
+                  key: REDIS_PASSWORD
+            - name: MYSQL_DATABASE
+              value: appdb

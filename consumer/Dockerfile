@@ -1,6 +1,6 @@
-FROM node:18
+# Dockerfile.consumer
+FROM node:20-alpine
 WORKDIR /app
-COPY package*.json ./
-RUN npm install
-COPY consumer.js ./
+COPY consumer.js .
+RUN npm init -y && npm install redis mysql2
 CMD ["node", "consumer.js"]

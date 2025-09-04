@@ -1,26 +1,39 @@
-const amqp = require("amqplib");
+// consumer.js
+const redis = require('redis');
+const mysql = require('mysql2/promise');
 
-async function consume() {
-  const queue = "hello";
+const REDIS_PASSWORD = process.env.REDIS_PASSWORD || 'redispass';
+const REDIS_HOST = process.env.REDIS_HOST || 'redis';
+// const REDIS_PORT = process.env.REDIS_PORT || 6379;
+const REDIS_PORT = 6379;
 
-  try {
-    const connection = await amqp.connect("amqp://rabbit:rabbit@rabbitmq:5672");
-    // const connection = await amqp.connect("amqp://rabbit:rabbit@localhost:5672");
-    const channel = await connection.createChannel();
+const MYSQL_HOST = process.env.MYSQL_HOST || 'mariadb';
+const MYSQL_USER = process.env.MYSQL_USER || 'appuser';
+const MYSQL_PASSWORD = process.env.MYSQL_PASSWORD || 'user';
+const MYSQL_DATABASE = process.env.MYSQL_DATABASE || 'appdb';
 
-    await channel.assertQueue(queue, { durable: false });
+(async () => {
+  // Redis
+  const url = `redis://:${REDIS_PASSWORD}@${REDIS_HOST}:${REDIS_PORT}`;
+  const redisClient = redis.createClient({ url });
+  redisClient.on('error', (err) => console.error('Redis Client Error', err));
+  await redisClient.connect();
 
-    console.log(`[x] Waiting for messages in ${queue}. Press CTRL+C to exit`);
+  const latestMessage = await redisClient.get('latest_message');
+  console.log(`[x] Latest from Redis: ${latestMessage}`);
+  await redisClient.disconnect();
 
-    channel.consume(queue, (msg) => {
-      if (msg !== null) {
-        console.log(`[x] Received: ${msg.content.toString()}`);
-        channel.ack(msg); // подтверждаем сообщение
-      }
-    });
-  } catch (err) {
-    console.error("Error in consumer:", err);
-  }
-}
+  // MariaDB
+  const connection = await mysql.createConnection({
+    host: MYSQL_HOST,
+    user: MYSQL_USER,
+    password: MYSQL_PASSWORD,
+    database: MYSQL_DATABASE,
+  });
 
-consume();
+  const [rows] = await connection.execute(`SELECT * FROM messages`);
+  console.log('[x] All messages from MariaDB:');
+  console.table(rows);
+
+  await connection.end();
+})();
